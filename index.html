@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TensorFlow.js Image Classifier</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 TensorFlow.js Image Classifier</h1>
+            <p class="subtitle">Train and test image classification models directly in your browser</p>
+        </header>
+
+        <main>
+            <!-- Training Data Management Section -->
+            <section id="data-management" class="card">
+                <h2>📁 Training Data Management</h2>
+                
+                <div class="class-management">
+                    <div class="class-controls">
+                        <input type="text" id="new-class-name" placeholder="Enter class name">
+                        <button id="add-class-btn" class="btn btn-primary">Add Class</button>
+                    </div>
+                    <div id="classes-container" class="classes-container">
+                        <!-- Dynamic class cards will be inserted here -->
+                    </div>
+                </div>
+                
+                <div id="drop-zone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <span class="drop-icon">📤</span>
+                        <p>Drag & drop images here or click to select</p>
+                        <p class="drop-hint">First, add a class above, then drop images to add training data</p>
+                    </div>
+                    <input type="file" id="file-input" multiple accept="image/*" hidden>
+                </div>
+
+                <div id="class-selector" class="class-selector hidden">
+                    <label for="target-class">Select target class for uploaded images:</label>
+                    <select id="target-class"></select>
+                </div>
+            </section>
+
+            <!-- Training Parameters Section -->
+            <section id="training-params" class="card">
+                <h2>⚙️ Training Parameters</h2>
+                
+                <div class="params-grid">
+                    <div class="param-group">
+                        <label for="learning-rate">Learning Rate: <span id="lr-value">0.001</span></label>
+                        <input type="range" id="learning-rate" min="0.0001" max="0.01" step="0.0001" value="0.001">
+                    </div>
+                    
+                    <div class="param-group">
+                        <label for="batch-size">Batch Size:</label>
+                        <select id="batch-size">
+                            <option value="16">16</option>
+                            <option value="32" selected>32</option>
+                            <option value="64">64</option>
+                        </select>
+                    </div>
+                    
+                    <div class="param-group">
+                        <label for="epochs">Epochs: <span id="epochs-value">20</span></label>
+                        <input type="range" id="epochs" min="10" max="100" step="1" value="20">
+                    </div>
+                    
+                    <div class="param-group">
+                        <label for="model-architecture">Model Architecture:</label>
+                        <select id="model-architecture">
+                            <option value="simple-cnn">Simple CNN</option>
+                            <option value="mobilenet">MobileNet Transfer Learning</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Training Control Panel Section -->
+            <section id="training-control" class="card">
+                <h2>🎮 Training Control</h2>
+                
+                <div class="control-buttons">
+                    <button id="start-training-btn" class="btn btn-success" disabled>▶️ Start Training</button>
+                    <button id="pause-training-btn" class="btn btn-warning" disabled>⏸️ Pause</button>
+                    <button id="stop-training-btn" class="btn btn-danger" disabled>⏹️ Stop</button>
+                </div>
+                
+                <div class="training-status">
+                    <div class="status-item">
+                        <span class="status-label">Status:</span>
+                        <span id="training-status" class="status-value">Idle</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Current Epoch:</span>
+                        <span id="current-epoch" class="status-value">0 / 0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Batch Progress:</span>
+                        <span id="batch-progress" class="status-value">0 / 0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Elapsed Time:</span>
+                        <span id="elapsed-time" class="status-value">00:00:00</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Estimated Remaining:</span>
+                        <span id="remaining-time" class="status-value">--:--:--</span>
+                    </div>
+                </div>
+                
+                <div class="progress-bar-container">
+                    <div id="training-progress" class="progress-bar"></div>
+                </div>
+            </section>
+
+            <!-- Training Visualization Section -->
+            <section id="training-visualization" class="card">
+                <h2>📊 Training Visualization</h2>
+                
+                <div class="charts-container">
+                    <div class="chart-wrapper">
+                        <h3>Loss</h3>
+                        <canvas id="loss-chart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <h3>Accuracy</h3>
+                        <canvas id="accuracy-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Model Validation Section -->
+            <section id="model-validation" class="card">
+                <h2>🔍 Model Validation</h2>
+                
+                <div id="test-drop-zone" class="drop-zone test-drop-zone">
+                    <div class="drop-zone-content">
+                        <span class="drop-icon">🖼️</span>
+                        <p>Drop a test image here or click to select</p>
+                    </div>
+                    <input type="file" id="test-file-input" accept="image/*" hidden>
+                </div>
+                
+                <div id="prediction-results" class="prediction-results hidden">
+                    <div class="result-preview">
+                        <h3>Test Image</h3>
+                        <img id="test-image-preview" alt="Test image preview">
+                    </div>
+                    
+                    <div class="result-details">
+                        <h3>Prediction Results</h3>
+                        <div id="predicted-class" class="predicted-class"></div>
+                        <div class="probability-chart-container">
+                            <canvas id="probability-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="model-stats">
+                    <h3>Model Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Training Images:</span>
+                            <span id="total-images" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Number of Classes:</span>
+                            <span id="num-classes" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Final Training Accuracy:</span>
+                            <span id="final-accuracy" class="stat-value">--</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Model Status:</span>
+                            <span id="model-status" class="stat-value">Not Trained</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="model-actions">
+                    <button id="save-model-btn" class="btn btn-primary" disabled>💾 Save Model</button>
+                    <button id="load-model-btn" class="btn btn-secondary">📂 Load Model</button>
+                    <button id="clear-data-btn" class="btn btn-danger">🗑️ Clear All Data</button>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Built with TensorFlow.js | Runs entirely in your browser</p>
+        </footer>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
