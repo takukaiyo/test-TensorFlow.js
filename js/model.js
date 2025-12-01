@@ -257,11 +257,14 @@ class ModelManager {
 
                 // Report epoch end
                 if (callbacks.onEpochEnd) {
+                    // TensorFlow.js may use 'acc' or 'accuracy' depending on version
+                    const acc = history.history.acc?.[0] ?? history.history.accuracy?.[0];
+                    const val_acc = history.history.val_acc?.[0] ?? history.history.val_accuracy?.[0];
                     callbacks.onEpochEnd(epoch, epochs, {
                         loss: history.history.loss[0],
-                        acc: history.history.acc[0],
+                        acc: acc,
                         val_loss: history.history.val_loss?.[0],
-                        val_acc: history.history.val_acc?.[0]
+                        val_acc: val_acc
                     });
                 }
             }
